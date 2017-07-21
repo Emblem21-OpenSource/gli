@@ -1,0 +1,95 @@
+#!/bin/bash
+
+case $1 in
+        new)
+                if [[ -z $(git status -s) ]]; then
+                    # No uncommitted work exists
+                    if [[ -z $(git ls-remote --heads origin $2) ]]; then
+                        # The branch does not exist on remote
+                        if [[ -z $(git branch -l | grep $2) ]]; then
+                            # The branch does not exist on local
+                            git checkout master
+                            git pull --all
+                            git checkout -b $2
+                            git push origin $2
+                            git pull origin $2
+                        else
+                            # The branch does exist on local
+                            git checkout master
+                            git pull --all
+                            git checkout $2
+                            git pull origin $2
+                        fi
+                    else
+                        # The branch does exist on remote
+                        if [[ -z $(git branch -l | grep $2) ]]; then
+                            # The branch does not exist on local
+                            git checkout master
+                            git pull --all
+                            git checkout -b $2
+                            git pull origin $2
+                        else
+                            # The branch does exist on local
+                            git checkout master
+                            git pull --all
+                            git checkout $2
+                            git pull origin $2
+                        fi
+                    fi
+                else
+                    echo "Can't create a new synced branch, you have pending changes."
+                    git status
+                fi
+                ;;
+        use)
+                if [[ -z $(git status -s) ]]; then
+                    # No uncommitted work exists
+                    if [[ -z $(git ls-remote --heads origin $2) ]]; then
+                        echo "$2 branch does not exist on the remote repo"
+                    else
+                        # the branch exists on the remote repo
+                        if [[ -z $(git branch -l | grep $2) ]]; then
+                            # the branch does not exist in the local repo
+                            git checkout master
+                            git pull --all
+                            git checkout -b $2
+                            git pull origin $2
+                        else
+                            # the branch does exist in the local repo
+                            git checkout master
+                            git pull --all
+                            git checkout $2
+                            git pull origin $2
+                        fi
+                    fi
+                else
+                    echo "Can't create a new branch, you have pending changes."
+                    git status
+                fi
+                ;;
+        save)
+                if [[ -z $(git status -s) ]]; then
+                    echo "You have nothing to commit"
+                else 
+                    branch=$(git symbolic-ref HEAD | sed 's!refs\/heads\/!!')
+                    if [[ -z $(git ls-remote --heads origin $branch) ]]; then
+                        echo "The branch you are trying to commit to ($branch) does not exist on the remote repo"
+                    else
+                        if [[ -z $(git branch -l | grep $branch) ]]; then
+                            echo "The branch you are trying to commit to ($branch) does not exist in your local checkout"
+                        else
+                            git add . --all
+                            git commit -m "$2"
+                            git push origin $branch                            
+                        fi
+                    fi
+                fi
+                ;;
+        *)
+          echo "Manages Git shortcuts"
+                echo "Usage: $0 {new|use|save}"
+                echo "  new <branchName>           Creates a new branch on remote and syncs it locally."
+                echo "  use  <branchName>          Selects a branch for you to do work on and syncs it with the remote."
+                echo "  save \"<commitMessage>\"     Commits codes to the correct branch."
+                ;;
+esac
